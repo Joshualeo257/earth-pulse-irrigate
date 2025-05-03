@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dashboard, Thermometer, CloudSun, Crops, Settings } from "lucide-react";
+import { LayoutDashboard, Thermometer, CloudSun, Crop, Settings } from "lucide-react";
 
 const Sidebar: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ const Sidebar: React.FC = () => {
             asChild
           >
             <Link to="/" className="flex items-center space-x-2">
-              <Dashboard className="h-5 w-5 text-irrigation-green" />
+              <LayoutDashboard className="h-5 w-5 text-irrigation-green" />
               <span>Sensor Data</span>
             </Link>
           </Button>
@@ -42,7 +42,7 @@ const Sidebar: React.FC = () => {
             asChild
           >
             <Link to="/crops" className="flex items-center space-x-2">
-              <Crops className="h-5 w-5 text-irrigation-earth" />
+              <Crop className="h-5 w-5 text-irrigation-earth" />
               <span>Crop Settings</span>
             </Link>
           </Button>
