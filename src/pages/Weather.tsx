@@ -1,253 +1,158 @@
-
-import React from "react";
+import React, { useState, useEffect } from 'react';
 import Navbar from "@/components/navigation/Navbar";
 import Sidebar from "@/components/navigation/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CloudSun, Cloud, Sun, CloudRain, Droplet, Wind, Thermometer } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LoaderCircle, AlertTriangle, Wind, Droplets, ThermometerSun } from 'lucide-react';
 
-// Sample weather data
-const forecastData = [
-  { 
-    day: "Today", 
-    date: "May 3",
-    high: 72, 
-    low: 55, 
-    icon: <CloudSun className="h-8 w-8 text-irrigation-blue" />,
-    condition: "Partly Cloudy",
-    precipitation: "10%",
-    humidity: "45%",
-    wind: "8 mph"
-  },
-  { 
-    day: "Tuesday", 
-    date: "May 4",
-    high: 78, 
-    low: 57, 
-    icon: <Cloud className="h-8 w-8 text-irrigation-blue" />,
-    condition: "Cloudy",
-    precipitation: "20%",
-    humidity: "50%",
-    wind: "10 mph"
-  },
-  { 
-    day: "Wednesday", 
-    date: "May 5",
-    high: 80, 
-    low: 60, 
-    icon: <Sun className="h-8 w-8 text-yellow-500" />,
-    condition: "Sunny",
-    precipitation: "0%",
-    humidity: "40%",
-    wind: "5 mph"
-  },
-  { 
-    day: "Thursday", 
-    date: "May 6",
-    high: 82, 
-    low: 62, 
-    icon: <CloudRain className="h-8 w-8 text-blue-600" />,
-    condition: "Scattered Showers",
-    precipitation: "40%",
-    humidity: "65%",
-    wind: "12 mph"
-  },
-  { 
-    day: "Friday", 
-    date: "May 7",
-    high: 79, 
-    low: 61, 
-    icon: <Cloud className="h-8 w-8 text-gray-500" />,
-    condition: "Mostly Cloudy",
-    precipitation: "25%",
-    humidity: "55%",
-    wind: "7 mph"
-  },
-];
+// Helper to get a dynamic OpenWeather icon URL
+const getWeatherIconUrl = (iconCode: string) => `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
-// Sample temperature data for the chart
-const temperatureData = [
-  { time: "00:00", temp: 62 },
-  { time: "03:00", temp: 60 },
-  { time: "06:00", temp: 58 },
-  { time: "09:00", temp: 65 },
-  { time: "12:00", temp: 70 },
-  { time: "15:00", temp: 72 },
-  { time: "18:00", temp: 68 },
-  { time: "21:00", temp: 65 },
-  { time: "00:00", temp: 63 },
-];
+// --- TypeScript Type Definitions for our formatted weather data ---
+type CurrentWeather = {
+    temperature: number;
+    feels_like: number;
+    humidity: number;
+    wind_speed: number;
+    condition: string;
+    condition_desc: string;
+    icon: string;
+};
 
-// Sample precipitation data for the chart
-const precipitationData = [
-  { time: "00:00", amount: 0 },
-  { time: "03:00", amount: 0 },
-  { time: "06:00", amount: 0 },
-  { time: "09:00", amount: 0.1 },
-  { time: "12:00", amount: 0.2 },
-  { time: "15:00", amount: 0.1 },
-  { time: "18:00", amount: 0 },
-  { time: "21:00", amount: 0 },
-  { time: "00:00", amount: 0 },
-];
+type DailyForecast = {
+    timestamp: string;
+    temperature: { min: number; max: number };
+    condition: string;
+    icon: string;
+};
+
+type WeatherData = {
+    current: CurrentWeather;
+    daily: DailyForecast[];
+    // We will add hourly data later for the charts
+};
 
 const Weather = () => {
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-64 hidden md:block">
-          <Sidebar />
-        </aside>
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">Weather</h1>
-              <p className="text-gray-600">Current conditions and forecast</p>
-            </div>
-            
-            {/* Current Weather */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center">
-                  <div className="flex items-center justify-center mb-4 md:mb-0 md:mr-8">
-                    <CloudSun className="h-16 w-16 text-irrigation-blue mr-4" />
-                    <div>
-                      <div className="text-5xl font-bold">72°</div>
-                      <div className="text-gray-500">Feels like 74°</div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
-                    <div className="flex items-center">
-                      <Thermometer className="h-5 w-5 text-irrigation-green mr-2" />
-                      <div>
-                        <div className="text-sm text-gray-500">High/Low</div>
-                        <div>72°/55°</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Droplet className="h-5 w-5 text-irrigation-blue mr-2" />
-                      <div>
-                        <div className="text-sm text-gray-500">Humidity</div>
-                        <div>45%</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Wind className="h-5 w-5 text-gray-500 mr-2" />
-                      <div>
-                        <div className="text-sm text-gray-500">Wind</div>
-                        <div>8 mph NE</div>
-                      </div>
-                    </div>
-                  </div>
+    const [weather, setWeather] = useState<WeatherData | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchWeatherData = async () => {
+            try {
+                // Fetch from our new backend endpoint
+                const response = await fetch('/api/weather/bangalore');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.success) {
+                    setWeather(result.data);
+                } else {
+                    throw new Error(result.message || "Failed to parse weather data.");
+                }
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchWeatherData();
+    }, []);
+
+    const renderContent = () => {
+        if (loading) {
+            return <div className="flex justify-center items-center h-96"><LoaderCircle className="animate-spin h-10 w-10 text-irrigation-green" /></div>;
+        }
+        if (error || !weather) {
+            return <div className="flex justify-center items-center h-96 bg-red-50 rounded-lg"><AlertTriangle className="h-8 w-8 text-red-500 mr-4" /> <p className="text-red-700">{error || "Could not load weather data."}</p></div>;
+        }
+
+        const { current, daily } = weather;
+        const todayForecast = daily[0];
+
+        return (
+            <div className="space-y-6">
+                {/* Current Conditions Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Current Conditions in Bengaluru</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                            <div className="flex items-center">
+                                <img src={getWeatherIconUrl(current.icon)} alt={current.condition_desc} className="w-20 h-20 -my-2" />
+                                <p className="text-6xl font-bold">{Math.round(current.temperature)}°C</p>
+                            </div>
+                            <p className="capitalize text-lg text-gray-600 ml-4">{current.condition_desc}</p>
+                            <p className="text-sm text-gray-500 ml-4">Feels like {Math.round(current.feels_like)}°C</p>
+                        </div>
+                        <div className="col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 text-center md:text-left">
+                            <div className="flex flex-col items-center">
+                                <ThermometerSun className="h-8 w-8 text-orange-500 mb-2" />
+                                <p className="font-semibold text-lg">{Math.round(todayForecast.temperature.max)}° / {Math.round(todayForecast.temperature.min)}°</p>
+                                <p className="text-sm text-gray-500">High / Low</p>
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <Droplets className="h-8 w-8 text-blue-500 mb-2" />
+                                <p className="font-semibold text-lg">{current.humidity}%</p>
+                                <p className="text-sm text-gray-500">Humidity</p>
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <Wind className="h-8 w-8 text-gray-500 mb-2" />
+                                <p className="font-semibold text-lg">{(current.wind_speed * 3.6).toFixed(1)} km/h</p>
+                                <p className="text-sm text-gray-500">Wind</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* 5-Day Forecast */}
+                <Card>
+                    <CardHeader><CardTitle>5-Day Forecast</CardTitle></CardHeader>
+                    <CardContent className="flex justify-between items-center text-center">
+                        {daily.slice(1, 6).map((day, index) => (
+                            <div key={index} className="flex flex-col items-center space-y-1">
+                                <p className="font-semibold">{new Date(day.timestamp).toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                                <img src={getWeatherIconUrl(day.icon)} alt={day.condition} className="w-12 h-12" />
+                                <p>{Math.round(day.temperature.max)}° / {Math.round(day.temperature.min)}°</p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Placeholder for Hourly Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader><CardTitle>Temperature Forecast (Next 24h)</CardTitle></CardHeader>
+                        <CardContent className="h-48 flex items-center justify-center text-gray-500">Chart coming soon...</CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle>Precipitation Forecast (Next 24h)</CardTitle></CardHeader>
+                        <CardContent className="h-48 flex items-center justify-center text-gray-500">Chart coming soon...</CardContent>
+                    </Card>
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Weather Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Temperature Forecast (24h)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={temperatureData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="temp" 
-                        stroke="#4CAF50" 
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Precipitation Forecast (24h)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={precipitationData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="#2196F3" 
-                        strokeWidth={2} 
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
             </div>
-            
-            {/* 5-Day Forecast */}
-            <Card>
-              <CardHeader>
-                <CardTitle>5-Day Forecast</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {forecastData.map((day, index) => (
-                    <div 
-                      key={index} 
-                      className={`grid grid-cols-3 md:grid-cols-6 gap-4 items-center p-4 ${
-                        index < forecastData.length - 1 ? "border-b" : ""
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium">{day.day}</div>
-                        <div className="text-sm text-gray-500">{day.date}</div>
-                      </div>
-                      
-                      <div className="flex items-center justify-center">
-                        {day.icon}
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="font-medium">{day.condition}</div>
-                      </div>
-                      
-                      <div className="text-center hidden md:block">
-                        <div className="text-sm text-gray-500">Precipitation</div>
-                        <div>{day.precipitation}</div>
-                      </div>
-                      
-                      <div className="text-center hidden md:block">
-                        <div className="text-sm text-gray-500">Humidity</div>
-                        <div>{day.humidity}</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="font-medium">{day.high}° / {day.low}°</div>
-                      </div>
+        );
+    };
+
+    return (
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <Navbar />
+            <div className="flex flex-1 overflow-hidden">
+                <aside className="w-64 hidden md:block"><Sidebar /></aside>
+                <main className="flex-1 overflow-y-auto p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="mb-6">
+                            <h1 className="text-3xl font-bold text-gray-800">Weather</h1>
+                            <p className="text-gray-600">Live conditions and forecast for your region</p>
+                        </div>
+                        {renderContent()}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+                </main>
+            </div>
+        </div>
+    );
 };
 
 export default Weather;

@@ -1,31 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { Weather } = require('../models/Sensor');
+const { getWeatherData } = require('../services/weatherService');
 
-// GET /api/weather/latest - Get the latest weather forecast
-router.get('/latest', async (req, res) => {
+// GET /api/weather/bangalore - Get the latest weather for Bangalore
+router.get('/bangalore', async (req, res, next) => {
     try {
-        const latestWeather = await Weather.findOne().sort({ timestamp: -1 });
-
-        if (!latestWeather) {
-            return res.status(404).json({ success: false, message: 'No weather data available.' });
-        }
-
-        res.json({ success: true, data: latestWeather });
+        const weatherData = await getWeatherData(); // Uses default Bangalore coordinates
+        res.json({ success: true, data: weatherData });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error fetching weather data', error: error.message });
+        // Pass the error to the global error handler
+        next(error);
     }
 });
 
-// POST /api/weather - Simulate adding new weather data (for demo/testing)
-router.post('/', async (req, res) => {
+// GET /api/weather/by-coords?lat=...&lon=... - Get weather for specific coordinates
+router.get('/by-coords', async (req, res, next) => {
     try {
-        // In a real app, a service would fetch this data from an external API
-        const newWeatherData = new Weather(req.body);
-        await newWeatherData.save();
-        res.status(201).json({ success: true, message: 'Weather data saved successfully', data: newWeatherData });
+        const { lat, lon } = req.query;
+        if (!lat || !lon) {
+            return res.status(400).json({ success: false, message: 'Latitude (lat) and Longitude (lon) are required query parameters.' });
+        }
+        const weatherData = await getWeatherData(parseFloat(lat), parseFloat(lon));
+        res.json({ success: true, data: weatherData });
     } catch (error) {
-        res.status(400).json({ success: false, message: 'Error saving weather data', error: error.message });
+        next(error);
     }
 });
 

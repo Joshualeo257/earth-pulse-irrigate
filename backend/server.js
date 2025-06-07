@@ -4,6 +4,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 
+dotenv.config();
+
 // Import routes
 const cropRoutes = require('./routes/crops');
 const sensorRoutes = require('./routes/sensors');
@@ -13,8 +15,6 @@ const irrigationRoutes = require('./routes/irrigation');
 // Import services
 const { updateIrrigationRecommendations } = require('./services/irrigationService');
 const { generateSensorData } = require('./services/sensorService');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
