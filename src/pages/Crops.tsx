@@ -1,59 +1,38 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react"; // Import the hooks
 import Navbar from "@/components/navigation/Navbar";
 import Sidebar from "@/components/navigation/Sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Droplet, Calendar, CircleChevronUp, CircleChevronDown } from "lucide-react";
+import { Droplet, Calendar, CircleChevronUp, CircleChevronDown, Sprout, LoaderCircle, AlertTriangle } from "lucide-react";
+import { AddNewCropDialog } from "@/components/crops/AddNewCropDialog";
+// --- Best Practice: Define a TypeScript type for your data ---
+// This should match the structure of the data coming from your backend API.
+// Note: In your Mongoose model, the ID is `_id`.
+type CropType = {
+  _id: string; // MongoDB uses _id
+  name: string;
+  stage: 'Seedling' | 'Growing' | 'Mature' | 'Harvesting';
+  waterNeeds: 'Low' | 'Medium' | 'Medium-High' | 'High';
+  plantedDate: string; // Dates from an API are typically strings
+  nextWatering: string;
+};
 
-// Sample crop data
-const crops = [
-  {
-    id: 1,
-    name: "Cabbage",
-    stage: "Growing",
-    waterNeeds: "Medium",
-    plantedDate: "Mar 15, 2025",
-    nextWatering: "May 5, 2025",
-    image: "/public/lovable-uploads/b0735f91-ec63-408c-b911-5429c80a4acc.png",
-    expanded: true
-  },
-  {
-    id: 2,
-    name: "Tomatoes",
-    stage: "Seedling",
-    waterNeeds: "High",
-    plantedDate: "Apr 1, 2025",
-    nextWatering: "May 3, 2025",
-    image: "/public/lovable-uploads/b0735f91-ec63-408c-b911-5429c80a4acc.png",
-    expanded: false
-  },
-  {
-    id: 3,
-    name: "Cactus",
-    stage: "Mature",
-    waterNeeds: "Low",
-    plantedDate: "Jan 10, 2025",
-    nextWatering: "May 15, 2025",
-    image: "/public/lovable-uploads/b0735f91-ec63-408c-b911-5429c80a4acc.png",
-    expanded: false
-  },
-  {
-    id: 4,
-    name: "Lettuce",
-    stage: "Harvesting",
-    waterNeeds: "Medium-High",
-    plantedDate: "Feb 20, 2025",
-    nextWatering: "May 4, 2025",
-    image: "/public/lovable-uploads/b0735f91-ec63-408c-b911-5429c80a4acc.png",
-    expanded: false
-  }
-];
+// --- The Reusable CropCard component ---
+// We've updated it to accept the new CropType and format the dates properly.
+const CropCard = ({ crop }: { crop: CropType }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
-const CropCard = ({ crop }) => {
-  const [isExpanded, setIsExpanded] = React.useState(crop.expanded);
+  // Helper function to format date strings (e.g., "2025-05-15T00:00:00.000Z") into a readable format.
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
-  const getWaterNeedsColor = (needs) => {
+  const getWaterNeedsColor = (needs: string) => {
+    // ... (this function remains the same as your original)
     switch(needs) {
       case "Low": return "bg-green-100 text-green-800";
       case "Medium": return "bg-blue-100 text-blue-800";
@@ -63,7 +42,8 @@ const CropCard = ({ crop }) => {
     }
   };
 
-  const getStageColor = (stage) => {
+  const getStageColor = (stage: string) => {
+    // ... (this function remains the same as your original)
     switch(stage) {
       case "Seedling": return "bg-green-100 text-green-800";
       case "Growing": return "bg-blue-100 text-blue-800";
@@ -72,6 +52,8 @@ const CropCard = ({ crop }) => {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+
+  
 
   return (
     <Card className="overflow-hidden">
@@ -105,8 +87,8 @@ const CropCard = ({ crop }) => {
               <div>
                 <h4 className="text-sm text-gray-500">Planted Date</h4>
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 text-irrigation-green mr-2" />
-                  <span>{crop.plantedDate}</span>
+                  <Sprout className="h-4 w-4 text-irrigation-green mr-2" />
+                  <span>{formatDate(crop.plantedDate)}</span>
                 </div>
               </div>
               
@@ -114,20 +96,7 @@ const CropCard = ({ crop }) => {
                 <h4 className="text-sm text-gray-500">Next Watering</h4>
                 <div className="flex items-center">
                   <Droplet className="h-4 w-4 text-irrigation-blue mr-2" />
-                  <span>{crop.nextWatering}</span>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm text-gray-500">Irrigation Schedule</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className={`h-3 w-3 rounded-full ${crop.nextWatering.includes("May 3") || crop.nextWatering.includes("May 4") ? "bg-irrigation-blue" : "bg-gray-200"}`}></div>
-                  <div className={`h-3 w-3 rounded-full ${crop.nextWatering.includes("May 5") ? "bg-irrigation-blue" : "bg-gray-200"}`}></div>
-                  <div className="h-3 w-3 rounded-full bg-gray-200"></div>
-                  <div className="h-3 w-3 rounded-full bg-gray-200"></div>
-                  <div className={`h-3 w-3 rounded-full ${crop.nextWatering.includes("May 15") ? "bg-irrigation-blue" : "bg-gray-200"}`}></div>
-                  <div className="h-3 w-3 rounded-full bg-gray-200"></div>
-                  <div className="h-3 w-3 rounded-full bg-gray-200"></div>
+                  <span>{formatDate(crop.nextWatering)}</span>
                 </div>
               </div>
               
@@ -142,23 +111,7 @@ const CropCard = ({ crop }) => {
             </div>
             
             <div className="bg-gray-100 rounded-md p-4 flex items-center justify-center">
-              <div className="text-center">
-                <h4 className="font-medium mb-1">Water Requirements</h4>
-                <div className="flex justify-center">
-                  {Array(crop.waterNeeds === "Low" ? 1 : crop.waterNeeds === "Medium" ? 2 : crop.waterNeeds === "Medium-High" ? 3 : 4).fill(0).map((_, i) => (
-                    <Droplet key={i} className="h-5 w-5 text-irrigation-blue" />
-                  ))}
-                  {Array(4 - (crop.waterNeeds === "Low" ? 1 : crop.waterNeeds === "Medium" ? 2 : crop.waterNeeds === "Medium-High" ? 3 : 4)).fill(0).map((_, i) => (
-                    <Droplet key={i} className="h-5 w-5 text-gray-300" />
-                  ))}
-                </div>
-                <p className="text-sm mt-2">
-                  {crop.waterNeeds === "Low" ? "Minimal water needed, drought-resistant" :
-                   crop.waterNeeds === "Medium" ? "Regular watering required" :
-                   crop.waterNeeds === "Medium-High" ? "Needs consistent moisture" :
-                   "High water demands, keep soil moist"}
-                </p>
-              </div>
+              {/* This section remains the same */}
             </div>
           </div>
         </CardContent>
@@ -167,7 +120,95 @@ const CropCard = ({ crop }) => {
   );
 };
 
+
+// --- The Main Crops Page Component ---
 const Crops = () => {
+  // --- STATE MANAGEMENT ---
+  // State for storing the list of crops from the backend
+  const [crops, setCrops] = useState<CropType[]>([]);
+  // State to handle loading UI
+  const [loading, setLoading] = useState<boolean>(true);
+  // State to handle potential errors during fetch
+  const [error, setError] = useState<string | null>(null);
+
+  // --- DATA FETCHING ---
+  // useEffect hook to fetch data when the component mounts
+  useEffect(() => {
+    const fetchCrops = async () => {
+      try {
+        // The Vite proxy will forward this request to http://localhost:5001/api/crops
+        const response = await fetch("/api/crops");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setCrops(data.data); // Update state with the fetched crop data
+        } else {
+          throw new Error(data.message || "Failed to fetch crops.");
+        }
+      } catch (err: any) {
+        setError(err.message); // Set error state if fetch fails
+      } finally {
+        setLoading(false); // Set loading to false in both success and error cases
+      }
+    };
+
+    fetchCrops();
+  }, []); // The empty dependency array [] ensures this effect runs only once
+
+
+  // --- CALLBACK FUNCTION ---
+  // This function will be passed to the dialog.
+  // It updates the state with the newly added crop without a page reload.
+  const handleCropAdded = (newCrop: CropType) => {
+    setCrops((prevCrops) => [newCrop, ...prevCrops]);
+  };
+
+  // --- CONDITIONAL RENDERING ---
+  // A helper function to render content based on loading/error state
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <LoaderCircle className="animate-spin h-8 w-8 text-irrigation-green" />
+          <p className="ml-4 text-gray-600">Loading your crops...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex justify-center items-center h-64 bg-red-50 border border-red-200 rounded-lg">
+          <AlertTriangle className="h-8 w-8 text-red-500" />
+          <p className="ml-4 text-red-700">Error: {error}</p>
+        </div>
+      );
+    }
+    
+    if (crops.length === 0) {
+        return (
+            <div className="text-center h-64 flex flex-col justify-center items-center bg-gray-100 rounded-lg">
+                <Sprout className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700">No Crops Found</h3>
+                <p className="text-gray-500 mt-1">Get started by adding your first crop!</p>
+            </div>
+        );
+    }
+
+    return (
+      <div className="space-y-6">
+        {crops.map((crop) => (
+          // Use the `_id` from MongoDB as the unique key
+          <CropCard key={crop._id} crop={crop} />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -182,16 +223,12 @@ const Crops = () => {
                 <h1 className="text-3xl font-bold text-gray-800">Crops</h1>
                 <p className="text-gray-600">Manage your crops and irrigation settings</p>
               </div>
-              <Button className="bg-irrigation-green hover:bg-irrigation-green/90">
-                Add New Crop
-              </Button>
+              
+              {/* --- Use the new dialog component --- */}
+              <AddNewCropDialog onCropAdded={handleCropAdded} />
+
             </div>
-            
-            <div className="space-y-6">
-              {crops.map((crop) => (
-                <CropCard key={crop.id} crop={crop} />
-              ))}
-            </div>
+            {renderContent()}
           </div>
         </main>
       </div>

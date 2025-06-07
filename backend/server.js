@@ -25,10 +25,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/irrigation_system', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/irrigation_system')
 .then(() => console.log('Connected to MongoDB'))
 .catch((error) => console.error('MongoDB connection error:', error));
 
@@ -70,13 +68,30 @@ cron.schedule('*/5 * * * *', async () => {
 });
 
 // Error handling middleware
+// --- NEW ROBUST ERROR HANDLING MIDDLEWARE ---
 app.use((error, req, res, next) => {
-  console.error('Error:', error);
+  // Log the full error stack for debugging
+  console.error("--- GLOBAL ERROR HANDLER ---");
+  console.error("Error Status:", error.status);
+  console.error("Error Message:", error.message);
+  console.error("Request Body:", req.body); // See what body caused the error
+  console.error(error.stack); // Full stack trace
+  console.error("--------------------------");
+
+  // If the error is from the body-parser (malformed JSON)
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Malformed JSON in request body.',
+      error: error.message
+    });
+  }
+
+  // General error response
   res.status(error.status || 500).json({
-    error: {
-      message: error.message || 'Internal Server Error',
-      status: error.status || 500
-    }
+    success: false,
+    message: error.message || 'Internal Server Error',
+    error: error.stack // Send stack in dev mode for easier debugging
   });
 });
 
